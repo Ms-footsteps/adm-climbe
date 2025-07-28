@@ -1,13 +1,24 @@
 <template>
-  <button 
-    class="button-loader" 
-    :class="[customClass, { 'loading': isLoading, 'disabled': disabled }]" 
+  <button
+    class="button-loader"
+    :class="[
+      customClass,
+      {
+        loading: status === 'loading',
+        success: status === 'success',
+        error:   status === 'error',
+        disabled: disabled || status === 'loading'
+      }
+    ]"
     :type="type"
-    :disabled="disabled || isLoading"
+    :disabled="disabled || status === 'loading'"
     @click="handleClick"
   >
     <span class="button-text">
-      {{ isLoading ? 'Carregando...' : text }}
+      <template v-if="status === 'loading'">Carregando...</template>
+      <template v-else-if="status === 'success'">✔️ Concluído</template>
+      <template v-else-if="status === 'error'">❌ Algo está errado</template>
+      <template v-else>{{ text }}</template>
     </span>
   </button>
 </template>
@@ -16,50 +27,33 @@
 export default {
   name: 'LoadingButton',
   props: {
-    text: {
-      type: String,
-      default: 'Logar'
-    },
-    type: {
-      type: String,
-      default: 'button'
-    },
-    customClass: {
-      type: [String, Array],
-      default: ''
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    },
-    loading: {
-      type: Boolean,
-      default: false
-    }
+    text:       { type: String, default: 'Enviar' },
+    type:       { type: String, default: 'button' },
+    customClass:{ type: [String,Array], default: '' },
+    disabled:   { type: Boolean, default: false }
   },
   data() {
     return {
-      isLoading: this.loading
-    }
-  },
-  watch: {
-    loading(newVal) {
-      this.isLoading = newVal
+      status: 'idle' // 'idle' | 'loading' | 'success' | 'error'
     }
   },
   methods: {
     async handleClick(event) {
-      if (!this.isLoading && !this.disabled) {
-        this.isLoading = true
-        this.$emit('click', event)
-        
-        // Se você quiser controlar o loading internamente, descomente as linhas abaixo:
-        // try {
-        //   await new Promise(resolve => setTimeout(resolve, 2000)) // Simula uma operação async
-        // } finally {
-        //   this.isLoading = false
-        // }
-      }
+      if (this.status !== 'idle' || this.disabled) return;
+
+      this.status = 'loading';
+      this.$emit('click', event);
+
+      // Nota: o pai deve chamar showSuccess() ou showError()
+      // quando souber do resultado da requisição.
+    },
+    showSuccess() {
+      this.status = 'success';
+      setTimeout(() => this.status = 'idle', 10000);
+    },
+    showError() {
+      this.status = 'error';
+      setTimeout(() => this.status = 'idle', 10000);
     }
   }
 }
@@ -83,6 +77,19 @@ export default {
   transition: all 0.3s ease;
   min-width: 140px;
   text-align: center;
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+/* ESTILO SUCCESS */
+.button-loader.success {
+  background-color: #4CAF50 !important;
+  box-shadow: 0 0 10px #4CAF50;
+}
+
+/* ESTILO ERROR */
+.button-loader.error {
+  background-color: #F44336 !important;
+  box-shadow: 0 0 10px #F44336;
 }
 
 .button-loader:hover:not(.loading):not(.disabled) {

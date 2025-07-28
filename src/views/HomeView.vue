@@ -9,20 +9,38 @@
         <image-component src="/img/climbe-logo.png" />
         <p>Portal do Sócio.</p>
         <div class="main-content">
-          <div class="login-form">
-            <input-component placeholder="Digite seu email" v-model="user" required/>
-            <input-component type="password" placeholder="Digite sua senha" v-model="pass" required/>
-            <button-component />
-            <span>É sócio e ainda não tem acesso ? <a href="#" id="create">Clique aqui</a></span>
+
+          <!-- LOGIN FORM -->
+          <div class="login-form" v-if="!showSignup">
+            <input-component placeholder="Digite seu email" v-model="user" required />
+            <input-component type="password" placeholder="Digite sua senha" v-model="pass" required />
+            <button-component @click="onLogin" text="Acessar"></button-component>
+            <span>
+              É sócio e ainda não tem acesso?
+              <a href="#" id="create" @click.prevent="showSignup = true">Clique aqui</a>
+            </span>
           </div>
-          
+
+          <!-- SIGNUP FORM -->
+          <div class="login-form" v-else>
+            <input-component placeholder="Nome completo" v-model="fullName" required />
+            <input-component placeholder="Digite seu email" v-model="signupEmail" required />
+            <input-component type="password" placeholder="Digite sua senha" v-model="signupPass" required />
+            <button-component @click="onSignup" ref="signupBtn" text="Solicitar Acesso"></button-component>
+            <span>
+              Já tem conta?
+              <a href="#" id="create" @click.prevent="showSignup = false">Voltar ao login</a>
+            </span>
+          </div>
+
           <div class="divider">
-            <hr class="custom-hr">
+            <hr class="custom-hr" />
           </div>
           
           <div class="typing-text-container">
             <p class="typing-text">{{ displayText }}</p>
           </div>
+
         </div>
       </div>
     </div>
@@ -31,16 +49,21 @@
 
 <script>
 import ImageComponent from '@/components/ImageComponent.vue'
-import InputComponent from '../components/InputComponent.vue'
-import SpinnerLoading from '@/components/SpinnerLoading.vue';
-import ButtonComponent from '@/components/ButtonComponent.vue';
+import InputComponent from '@/components/InputComponent.vue'
+import SpinnerLoading from '@/components/SpinnerLoading.vue'
+import ButtonComponent from '@/components/ButtonComponent.vue'
 
 export default {
   components: { ImageComponent, InputComponent, SpinnerLoading, ButtonComponent },
   data() {
     return {
+      oi: false,               // já existente
       user: '',
       pass: '',
+      fullName: '',            // novo
+      signupEmail: '',         // novo
+      signupPass: '',
+      showSignup: false,       // flag de alternância
       displayText: '',
       fullText: 'A melhor empresa precisa dos melhores orientadores',
       typewriterIndex: 0,
@@ -48,26 +71,42 @@ export default {
     }
   },
   mounted() {
-    this.startTypewriter();
+    this.startTypewriter()
   },
   methods: {
     startTypewriter() {
       const typeNextChar = () => {
         if (this.typewriterIndex < this.fullText.length) {
-          this.displayText += this.fullText.charAt(this.typewriterIndex);
-          this.typewriterIndex++;
-          setTimeout(typeNextChar, this.typewriterSpeed);
-        } else {
-          // Reinicia a animação após 3 segundos
-          // setTimeout(() => {
-          //   this.displayText = '';
-          //   this.typewriterIndex = 0;
-          //   setTimeout(typeNextChar, 500);
-          // }, 10000);
+          this.displayText += this.fullText.charAt(this.typewriterIndex)
+          this.typewriterIndex++
+          setTimeout(typeNextChar, this.typewriterSpeed)
         }
-      };
-      
-      setTimeout(typeNextChar, 1000); // Inicia após 1 segundo
+      }
+      setTimeout(typeNextChar, 1000)
+    },
+    onLogin() {
+      console.log('Fazer login com', this.user, this.pass)
+    },
+    async onSignup() {
+      try {
+        const res = await fetch('http://localhost:3000/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: this.fullName,
+            email:    this.signupEmail,
+            password: this.signupPass
+          })
+        });
+
+        if (!res.ok) throw new Error('Status ' + res.status);
+        this.$refs.signupBtn.showSuccess();
+      }
+      catch (err) {
+        console.error('Signup falhou:', err);
+        this.$refs.signupBtn.showError();
+      }
+      console.log('Criar conta para', this.fullName, this.signupEmail)
     }
   }
 }
