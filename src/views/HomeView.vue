@@ -14,7 +14,7 @@
           <div class="login-form" v-if="!showSignup">
             <input-component placeholder="Digite seu email" v-model="user" required />
             <input-component type="password" placeholder="Digite sua senha" v-model="pass" required />
-            <button-component @click="onLogin" text="Acessar"></button-component>
+            <button-component @click="login" text="Acessar"></button-component>
             <span>
               É sócio e ainda não tem acesso?
               <a href="#" id="create" @click.prevent="showSignup = true">Clique aqui</a>
@@ -87,6 +87,23 @@ export default {
     onLogin() {
       console.log('Fazer login com', this.user, this.pass)
     },
+    async login() {
+      try {
+        const req = await fetch('http://localhost:3000/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type':'application/json'
+          },
+          body: JSON.stringify({
+            email: this.user,
+            password: this.pass
+          })
+        })
+        this.$refs.signupBtn.showSuccess()
+      } catch(error) {
+        this.$refs.signupBtn.showError()
+      }
+    },
     async onSignup() {
       try {
         const res = await fetch('http://localhost:3000/api/auth/signup', {
@@ -106,7 +123,6 @@ export default {
         console.error('Signup falhou:', err);
         this.$refs.signupBtn.showError();
       }
-      console.log('Criar conta para', this.fullName, this.signupEmail)
     }
   }
 }
