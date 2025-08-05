@@ -78,13 +78,11 @@ export default {
   transition: background-color 0.3s, box-shadow 0.3s;
 }
 
-/* ESTILO SUCCESS */
 .button-loader.success {
   background-color: #4CAF50 !important;
   box-shadow: 0 0 10px #4CAF50;
 }
 
-/* ESTILO ERROR */
 .button-loader.error {
   background-color: #F44336 !important;
   box-shadow: 0 0 10px #F44336;
