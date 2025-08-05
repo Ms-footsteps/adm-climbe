@@ -1,46 +1,65 @@
 <template>
-  <spinner-loading msg="true" v-if="oi"/>
-  <div class="background-video-container" v-else>
-    <video autoplay muted loop playsinline class="background-video">
-      <source src="/video/climbeVideo.mp4" type="video/mp4" />
-    </video>
-    <div class="overlay">
-      <div class="overlay-content">
-        <image-component src="/img/climbe-logo.png" />
-        <p>Portal do Sócio.</p>
-        <div class="main-content">
+  <div>
+    <spinner-loading v-if="oi" :msg="true" />
 
-          <!-- LOGIN FORM -->
-          <div class="login-form" v-if="!showSignup">
-            <input-component placeholder="Digite seu email" v-model="user" required />
-            <input-component type="password" placeholder="Digite sua senha" v-model="pass" required />
-            <button-component @click="login" text="Acessar"></button-component>
-            <span>
-              É sócio e ainda não tem acesso?
-              <a href="#" id="create" @click.prevent="showSignup = true">Clique aqui</a>
-            </span>
-          </div>
+    
+    <div class="background-video-container" v-else>
+      <video autoplay muted loop playsinline class="background-video">
+        <source src="/video/climbeVideo.mp4" type="video/mp4" />
+      </video>
+      <div class="overlay">
+        <div class="overlay-content">
+          <image-component src="/img/climbe-logo.png" />
+          <p>Portal do Sócio.</p>
+          <div class="main-content">
 
-          <!-- SIGNUP FORM -->
-          <div class="login-form" v-else>
-            <input-component placeholder="Nome completo" v-model="fullName" required />
-            <input-component placeholder="Digite seu email" v-model="signupEmail" required />
-            <input-component type="password" placeholder="Digite sua senha" v-model="signupPass" required />
-            <button-component @click="onSignup" ref="signupBtn" text="Solicitar Acesso"></button-component>
-            <span>
-              Já tem conta?
-              <a href="#" id="create" @click.prevent="showSignup = false">Voltar ao login</a>
-            </span>
-          </div>
+            
+            <div class="login-form" v-if="!showSignup">
+              <input-component placeholder="Digite seu email" v-model="user" required />
+              <input-component type="password" placeholder="Digite sua senha" v-model="pass" required />
 
-          <div class="divider">
-            <hr class="custom-hr" />
-          </div>
-          
-          <div class="typing-text-container">
-            <p class="typing-text">{{ displayText }}</p>
-          </div>
+              <button-component
+                ref="loginBtn"
+                :disabled="oi"
+                @click="login"
+                text="Acessar"
+              />
 
+              <span>
+                É sócio e ainda não tem acesso?
+                <a href="#" @click.prevent="showSignup = true">Clique aqui</a>
+              </span>
+            </div>
+
+
+            <div class="login-form" v-else>
+              <input-component placeholder="Nome completo" v-model="fullName" required />
+              <input-component placeholder="Digite seu email" v-model="signupEmail" required />
+              <input-component type="password" placeholder="Digite sua senha" v-model="signupPass" required />
+
+              <button-component
+                ref="signupBtn"
+                @click="onSignup"
+                text="Solicitar Acesso"
+              />
+
+              <span>
+                Já tem conta?
+                <a href="#" @click.prevent="showSignup = false">Voltar ao login</a>
+              </span>
+            </div>
+
+            
+            <div class="divider">
+              <hr class="custom-hr" />
+            </div>
+
+            
+            <div class="typing-text-container">
+              <p class="typing-text">{{ displayText }}</p>
+            </div>
+
+          </div>
         </div>
       </div>
     </div>
@@ -54,20 +73,26 @@ import SpinnerLoading from '@/components/SpinnerLoading.vue'
 import ButtonComponent from '@/components/ButtonComponent.vue'
 
 export default {
-  components: { ImageComponent, InputComponent, SpinnerLoading, ButtonComponent },
+  name: 'LoginView',
+  components: {
+    ImageComponent,
+    InputComponent,
+    SpinnerLoading,
+    ButtonComponent
+  },
   data() {
     return {
-      oi: false,               // já existente
-      user: '',
-      pass: '',
-      fullName: '',            // novo
-      signupEmail: '',         // novo
-      signupPass: '',
-      showSignup: false,       // flag de alternância
-      displayText: '',
+      oi: false,            
+      user: '',             
+      pass: '',             
+      fullName: '',         
+      signupEmail: '',      
+      signupPass: '',       
+      showSignup: false,    
+      displayText: '',      
       fullText: 'A melhor empresa precisa dos melhores orientadores',
-      typewriterIndex: 0,
-      typewriterSpeed: 80
+      typewriterIndex: 0,   
+      typewriterSpeed: 80   
     }
   },
   mounted() {
@@ -84,44 +109,52 @@ export default {
       }
       setTimeout(typeNextChar, 1000)
     },
-    onLogin() {
-      console.log('Fazer login com', this.user, this.pass)
-    },
     async login() {
+      this.oi = true
       try {
-        const req = await fetch('http://localhost:3000/api/auth/login', {
+        const res = await fetch('http://localhost:3000/api/auth/login', {
           method: 'POST',
-          headers: {
-            'Content-Type':'application/json'
-          },
-          body: JSON.stringify({
-            email: this.user,
-            password: this.pass
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: this.user, password: this.pass })
         })
-        this.$refs.signupBtn.showSuccess()
-      } catch(error) {
-        this.$refs.signupBtn.showError()
+
+        if (res.status === 403) {
+          this.$refs.loginBtn.showError('Aguardando aprovação')
+          return
+        }
+        if (!res.ok) {
+          throw new Error(`Erro ${res.status}`)
+        }
+
+        const { token } = await res.json()
+        localStorage.setItem('token', token)
+        this.$refs.loginBtn.showSuccess()
+        this.$router.push('/main')
+      } catch (err) {
+        console.error('Login falhou:', err)
+        if (!this.$refs.loginBtn._hasError) {
+          this.$refs.loginBtn.showError('E‑mail ou senha inválidos')
+        }
+      } finally {
+        this.oi = false
       }
     },
     async onSignup() {
+      this.oi = true
       try {
         const res = await fetch('http://localhost:3000/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fullName: this.fullName,
-            email:    this.signupEmail,
-            password: this.signupPass
-          })
-        });
-
-        if (!res.ok) throw new Error('Status ' + res.status);
-        this.$refs.signupBtn.showSuccess();
-      }
-      catch (err) {
-        console.error('Signup falhou:', err);
-        this.$refs.signupBtn.showError();
+          body: JSON.stringify({ fullName: this.fullName, email: this.signupEmail, password: this.signupPass })
+        })
+        if (!res.ok) throw new Error(`Status ${res.status}`)
+        this.$refs.signupBtn.showSuccess()
+        this.showSignup = false
+      } catch (err) {
+        console.error('Signup falhou:', err)
+        this.$refs.signupBtn.showError('Falha no cadastro')
+      } finally {
+        this.oi = false
       }
     }
   }
@@ -129,12 +162,10 @@ export default {
 </script>
 
 <style scoped>
-
 #create {
   color: var(--theme-color);
 }
 
-/* Container principal */
 .background-video-container {
   position: relative;
   width: 100vw;
@@ -142,7 +173,6 @@ export default {
   overflow: hidden;
 }
 
-/* Vídeo de fundo */
 .background-video {
   position: absolute;
   top: 0;
@@ -154,7 +184,6 @@ export default {
   z-index: 0;
 }
 
-/* Overlay escuro */
 .background-video-container::before {
   content: '';
   position: absolute;
@@ -169,7 +198,6 @@ export default {
   z-index: 1;
 }
 
-/* Overlay principal */
 .overlay {
   position: relative;
   z-index: 2;
@@ -181,7 +209,6 @@ export default {
   padding: 2rem;
 }
 
-/* Conteúdo overlay transparente */
 .overlay-content {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(2px);
@@ -191,7 +218,6 @@ export default {
   box-shadow: 
     0 25px 50px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -199,16 +225,12 @@ export default {
   gap: 25px;
   color: #fff;
   text-align: center;
-  
-  /* Animação suave */
   animation: fadeInUp 0.8s ease-out;
   position: relative;
   overflow: hidden;
   max-width: 900px;
   width: 100%;
 }
-
-/* Efeito adicional de brilho */
 .overlay-content::before {
   content: '';
   position: absolute;
@@ -224,36 +246,23 @@ export default {
   );
   animation: shimmer 3s infinite;
 }
-
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(30px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
-
 @keyframes shimmer {
   0% { left: -100%; }
   100% { left: 100%; }
 }
-
-/* Logo styling */
 .overlay-content img {
   max-width: 140px;
   height: auto;
   filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.3));
   transition: transform 0.3s ease;
 }
-
 .overlay-content img:hover {
   transform: scale(1.05);
 }
-
-/* Texto principal */
 .overlay-content > p {
   font-size: 28px;
   font-weight: 600;
@@ -261,8 +270,6 @@ export default {
   text-shadow: 0 2px 15px rgba(0, 0, 0, 0.5);
   letter-spacing: 0.5px;
 }
-
-/* Container principal do conteúdo */
 .main-content {
   display: flex;
   align-items: center;
@@ -270,8 +277,6 @@ export default {
   width: 100%;
   max-width: 800px;
 }
-
-/* Formulário de login */
 .login-form {
   display: flex;
   flex-direction: column;
@@ -280,14 +285,11 @@ export default {
   max-width: 320px;
   flex: 1;
 }
-
-/* Divisor personalizado */
 .divider {
   display: flex;
   align-items: center;
   height: 300px;
 }
-
 .custom-hr {
   width: 2px;
   height: 100%;
@@ -302,7 +304,6 @@ export default {
   position: relative;
   animation: hrGlow 2s ease-in-out infinite alternate;
 }
-
 .custom-hr::before {
   content: '';
   position: absolute;
@@ -316,30 +317,14 @@ export default {
   box-shadow: 0 0 15px var(--theme-color);
   animation: pulse 1.5s ease-in-out infinite;
 }
-
 @keyframes hrGlow {
-  0% { 
-    box-shadow: 0 0 5px var(--theme-color);
-    filter: brightness(1);
-  }
-  100% { 
-    box-shadow: 0 0 20px var(--theme-color);
-    filter: brightness(1.3);
-  }
+  0% { box-shadow: 0 0 5px var(--theme-color); filter: brightness(1); }
+  100% { box-shadow: 0 0 20px var(--theme-color); filter: brightness(1.3); }
 }
-
 @keyframes pulse {
-  0%, 100% { 
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
-  }
-  50% { 
-    transform: translate(-50%, -50%) scale(1.5);
-    opacity: 0.7;
-  }
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.7; }
 }
-
-/* Container do texto digitado */
 .typing-text-container {
   flex: 1;
   display: flex;
@@ -347,7 +332,6 @@ export default {
   justify-content: center;
   min-height: 80px;
 }
-
 .typing-text {
   font-size: 42px;
   font-weight: 600;
@@ -360,20 +344,16 @@ export default {
   text-align: left;
   max-width: 280px;
 }
-
 .typing-text::after {
   content: '|';
   color: var(--theme-color);
   animation: blink 1s infinite;
   font-weight: 400;
 }
-
 @keyframes blink {
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0; }
 }
-
-/* Inputs transparentes */
 .login-form input {
   padding: 16px 20px;
   background: rgba(255, 255, 255, 0.15);
@@ -386,22 +366,16 @@ export default {
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
-
 .login-form input::placeholder {
   color: rgba(255, 255, 255, 0.7);
   font-weight: 400;
 }
-
 .login-form input:focus {
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 
-    0 0 0 3px rgba(255, 255, 255, 0.1),
-    0 8px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1), 0 8px 25px rgba(0, 0, 0, 0.2);
   transform: translateY(-2px);
 }
-
-/* Botão transparente */
 .login-form button {
   padding: 16px 32px;
   background: rgba(255, 255, 255, 0.2);
@@ -417,116 +391,34 @@ export default {
   text-transform: uppercase;
   letter-spacing: 1px;
 }
-
 .login-form button:hover {
   background: rgba(255, 255, 255, 0.25);
   border-color: rgba(255, 255, 255, 0.5);
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
-
 .login-form button:active {
   transform: translateY(0);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
-
-/* Responsividade */
 @media (max-width: 968px) {
-  .main-content {
-    flex-direction: column;
-    gap: 30px;
-  }
-  
-  .divider {
-    height: auto;
-    width: 100%;
-  }
-  
-  .custom-hr {
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(
-      to right,
-      transparent,
-      var(--theme-color),
-      var(--theme-color),
-      transparent
-    );
-  }
-  
-  .custom-hr::before {
-    top: 50%;
-    left: 50%;
-  }
-  
-  .typing-text {
-    text-align: center;
-    max-width: 100%;
-  }
+  .main-content { flex-direction: column; gap: 30px; }
+  .divider { height: auto; width: 100%; }
+  .custom-hr { width: 100%; height: 2px; background: linear-gradient(to right, transparent, var(--theme-color), var(--theme-color), transparent); }
+  .typing-text { text-align: center; max-width: 100%; }
 }
-
-@media (max-width: 768px) {
-  .overlay {
-    padding: 1rem;
-  }
-  
-  .overlay-content {
-    padding: 2rem 1.5rem;
-    max-width: 90%;
-    border-radius: 16px;
-  }
-  
-  .overlay-content > p {
-    font-size: 24px;
-  }
-  
-  .login-form {
-    max-width: 100%;
-  }
-  
-  .login-form input,
-  .login-form button {
-    padding: 14px 18px;
-    font-size: 15px;
-  }
-  
-  .typing-text {
-    font-size: 20px;
-  }
-}
-
 @media (max-width: 480px) {
-  .overlay-content {
-    padding: 1.5rem 1rem;
-    gap: 20px;
-  }
-  
-  .overlay-content > p {
-    font-size: 22px;
-  }
-  
-  .overlay-content img {
-    max-width: 120px;
-  }
-  
-  .login-form {
-    gap: 16px;
-  }
-  
-  .typing-text {
-    font-size: 18px;
-  }
-  
-  .main-content {
-    gap: 20px;
-  }
+  .overlay-content { padding: 1.5rem 1rem; gap: 20px; }
+  .overlay-content > p { font-size: 22px; }
+  .overlay-content img { max-width: 120px; }
+  .login-form { gap: 16px; }
+  .typing-text { font-size: 18px; }
+  .main-content { gap: 20px; }
 }
-
 .login-form input:invalid:not(:placeholder-shown) {
   border-color: rgba(239, 68, 68, 0.6);
   background: rgba(239, 68, 68, 0.1);
 }
-
 .login-form input:valid:not(:placeholder-shown) {
   border-color: rgba(57, 198, 187, 0.6);
   background: rgba(34, 197, 94, 0.1);

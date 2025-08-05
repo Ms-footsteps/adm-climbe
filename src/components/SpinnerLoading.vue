@@ -43,6 +43,7 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
+    perspective:800px;
 }
 
 .ring {
@@ -55,20 +56,23 @@ export default {
 
 .ring:nth-child(1) {
     border-bottom-width: 8px;
-    border-color: #f0f0f0;
+    border-color: #f0f0f0 !important;
     animation: rotate1 2s linear infinite;
+    z-index: 100;
 }
 
 .ring:nth-child(2) {
     border-right-width: 8px;
-    border-color: var(--theme-color) ;
+    border-color: var(--theme-color) !important;
     animation: rotate2 2s linear infinite;
+    z-index: 100;
 }
 
 .ring:nth-child(3) {
     border-right-width: 8px;
-    border-color: #c6395b ;
+    border-color: #c6395b !important;
     animation: rotate3 2s linear infinite;
+    z-index: 100;
 }
 
 @keyframes rotate1 {

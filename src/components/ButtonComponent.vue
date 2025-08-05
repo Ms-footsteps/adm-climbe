@@ -34,7 +34,7 @@ export default {
   },
   data() {
     return {
-      status: 'idle' // 'idle' | 'loading' | 'success' | 'error'
+      status: 'idle'
     }
   },
   methods: {
@@ -44,8 +44,6 @@ export default {
       this.status = 'loading';
       this.$emit('click', event);
 
-      // Nota: o pai deve chamar showSuccess() ou showError()
-      // quando souber do resultado da requisição.
     },
     showSuccess() {
       this.status = 'success';

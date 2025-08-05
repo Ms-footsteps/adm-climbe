@@ -8,12 +8,18 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+      meta: {noSidebar: true}
     },
-    // {
-    //   path: '/about',
-    //   name: 'about',
-    //   component: () => import('../views/AboutView.vue'),
-    // },
+    {
+      path: '/main',
+      name: 'main',
+      component: () => import('../views/MainView.vue')
+    },
+    {
+      path: '/users',
+      name: 'users',
+      component: () => import('../components/UserTable/UserTable.vue')
+    }
   ],
 })
 
