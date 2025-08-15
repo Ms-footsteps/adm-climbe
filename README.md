@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner-climbe-unit.png" alt="Climbe + UNIT" width="800">
+  <img src="public/img/climbe-logo.png" alt="Climbe + UNIT" width="800">
 </p>
 
 # 🌄 Climbe FD — Frontend do Sistema de Gestão  
